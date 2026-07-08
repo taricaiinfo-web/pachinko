@@ -64,5 +64,3 @@ export async function updateProfile(
   revalidatePath("/records");
   return { error: null, success: true };
 }
-
-export { AVATAR_OPTIONS };
