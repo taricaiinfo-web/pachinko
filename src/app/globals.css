@@ -24,3 +24,41 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ---- チャート用カラートークン (dataviz skill 準拠の検証済みパレット) ---- */
+:root {
+  --chart-surface: #fcfcfb;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #898781;
+  --chart-text-secondary: #52514e;
+  --chart-pos: #e34948; /* diverging red: 収支プラス */
+  --chart-neg: #2a78d6; /* diverging blue: 収支マイナス */
+  --chart-series-1: #2a78d6; /* categorical slot1: 投資額 */
+  --chart-series-2: #1baf7a; /* categorical slot2: 回収額 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chart-surface: #1a1a19;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #898781;
+    --chart-text-secondary: #c3c2b7;
+    --chart-pos: #e66767;
+    --chart-neg: #3987e5;
+    --chart-series-1: #3987e5;
+    --chart-series-2: #199e70;
+  }
+}
+
+.bar-pos {
+  fill: var(--chart-pos);
+}
+.bar-neg {
+  fill: var(--chart-neg);
+}
+.bar-series-1 {
+  fill: var(--chart-series-1);
+}
+.bar-series-2 {
+  fill: var(--chart-series-2);
+}
