@@ -1,31 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { GUEST_COOKIE_NAME } from "@/lib/constants";
 
-// "/" は page.tsx 側でログイン状態に応じたリダイレクトを行うため、常に通過させる。
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback"];
-
-// ゲスト(未ログイン)でも閲覧だけは許可するパス。
-// - "/records" 一覧, "/records/<id>" 詳細(ただし "/records/new" は除く)
-// - "/stats" グラフ
-// - "/profile/<id>" 他ユーザーのプロフィール閲覧(自分の "/profile" 編集画面は除く)
-const RECORD_DETAIL_RE = /^\/records\/(?!new$)[^/]+$/;
-const OTHER_PROFILE_RE = /^\/profile\/[^/]+$/;
+const PUBLIC_PATHS = ["/login", "/signup", "/auth/callback"];
 
 function isPublicPath(pathname: string) {
   return (
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/public")
-  );
-}
-
-function isGuestAllowedPath(pathname: string) {
-  return (
-    pathname === "/records" ||
-    pathname === "/stats" ||
-    RECORD_DETAIL_RE.test(pathname) ||
-    OTHER_PROFILE_RE.test(pathname)
   );
 }
 
@@ -60,12 +42,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isGuest = request.cookies.get(GUEST_COOKIE_NAME)?.value === "1";
 
   if (!user && !isPublicPath(pathname)) {
-    if (isGuest && isGuestAllowedPath(pathname)) {
-      return supabaseResponse;
-    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);

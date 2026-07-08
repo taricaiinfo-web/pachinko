@@ -9,13 +9,13 @@ export default async function RecordsPage({
 }: {
   searchParams: Promise<{ scope?: string }>;
 }) {
+  const { scope: scopeParam } = await searchParams;
+  const scope = scopeParam === "mine" ? "mine" : "all";
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { scope: scopeParam } = await searchParams;
-  const scope = user && scopeParam === "mine" ? "mine" : "all";
 
   let query = supabase
     .from("records_with_profile")
@@ -34,22 +34,18 @@ export default async function RecordsPage({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">データ一覧</h1>
-        {user && (
-          <Link
-            href="/records/new"
-            className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            + 新規登録
-          </Link>
-        )}
+        <Link
+          href="/records/new"
+          className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+        >
+          + 新規登録
+        </Link>
       </div>
 
-      {user && (
-        <div className="flex gap-2">
-          <ScopeTab href="/records?scope=all" active={scope === "all"} label="みんなの記録" />
-          <ScopeTab href="/records?scope=mine" active={scope === "mine"} label="自分の記録" />
-        </div>
-      )}
+      <div className="flex gap-2">
+        <ScopeTab href="/records?scope=all" active={scope === "all"} label="みんなの記録" />
+        <ScopeTab href="/records?scope=mine" active={scope === "mine"} label="自分の記録" />
+      </div>
 
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">

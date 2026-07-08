@@ -112,19 +112,19 @@ create trigger on_auth_user_created
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security
--- 方針: 閲覧(select)はゲスト(未ログイン/anon)を含め誰でも可能。
---       書き込み(insert/update/delete)は本人(authenticated かつ本人の行)のみ可能。
+-- 方針: ログイン済みユーザーは全員のデータを閲覧可能(認証必須アプリ)。
+--       書き込み(insert/update/delete)は本人のデータのみ可能。
 -- ----------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 alter table public.records enable row level security;
 alter table public.comments enable row level security;
 
 -- profiles
-drop policy if exists "profiles_select_authenticated" on public.profiles;
 drop policy if exists "profiles_select_all" on public.profiles;
-create policy "profiles_select_all"
+drop policy if exists "profiles_select_authenticated" on public.profiles;
+create policy "profiles_select_authenticated"
   on public.profiles for select
-  to authenticated, anon
+  to authenticated
   using (true);
 
 drop policy if exists "profiles_insert_own" on public.profiles;
@@ -141,11 +141,11 @@ create policy "profiles_update_own"
   with check (auth.uid() = id);
 
 -- records
-drop policy if exists "records_select_authenticated" on public.records;
 drop policy if exists "records_select_all" on public.records;
-create policy "records_select_all"
+drop policy if exists "records_select_authenticated" on public.records;
+create policy "records_select_authenticated"
   on public.records for select
-  to authenticated, anon
+  to authenticated
   using (true);
 
 drop policy if exists "records_insert_own" on public.records;
@@ -168,11 +168,11 @@ create policy "records_delete_own"
   using (auth.uid() = user_id);
 
 -- comments
-drop policy if exists "comments_select_authenticated" on public.comments;
 drop policy if exists "comments_select_all" on public.comments;
-create policy "comments_select_all"
+drop policy if exists "comments_select_authenticated" on public.comments;
+create policy "comments_select_authenticated"
   on public.comments for select
-  to authenticated, anon
+  to authenticated
   using (true);
 
 drop policy if exists "comments_insert_own" on public.comments;

@@ -1,9 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { GUEST_COOKIE_NAME } from "@/lib/constants";
 
 export type AuthFormState = {
   error: string | null;
@@ -37,7 +35,6 @@ export async function login(
     };
   }
 
-  (await cookies()).delete(GUEST_COOKIE_NAME);
   redirect(redirectTo);
 }
 
@@ -122,28 +119,11 @@ export async function signup(
     };
   }
 
-  (await cookies()).delete(GUEST_COOKIE_NAME);
   redirect("/profile?welcome=1");
 }
 
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  (await cookies()).delete(GUEST_COOKIE_NAME);
   redirect("/login");
-}
-
-/**
- * ログインをスキップし、ゲスト(閲覧専用)として続行する。
- * Supabase セッションは発行せず、Cookie フラグのみで閲覧専用ページへのアクセスを許可する。
- */
-export async function continueAsGuest() {
-  (await cookies()).set(GUEST_COOKIE_NAME, "1", {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30日
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  redirect("/records");
 }
