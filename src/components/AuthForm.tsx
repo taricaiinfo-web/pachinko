@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { login, signup, type AuthFormState } from "@/app/auth/actions";
@@ -12,6 +12,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/records";
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={formAction} className="flex flex-col gap-4 w-full max-w-sm">
@@ -41,7 +42,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <input
           id="password"
           name="password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           required
           minLength={6}
           autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -61,7 +62,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <input
             id="passwordConfirm"
             name="passwordConfirm"
-            type="password"
+            type={showPassword ? "text" : "password"}
             required
             minLength={6}
             autoComplete="new-password"
@@ -69,6 +70,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           />
         </div>
       )}
+
+      <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <input
+          type="checkbox"
+          checked={showPassword}
+          onChange={(e) => setShowPassword(e.target.checked)}
+          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+        />
+        パスワードを表示する
+      </label>
 
       {state.error && (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">

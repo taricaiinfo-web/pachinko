@@ -14,9 +14,13 @@ create table if not exists public.profiles (
   username text not null unique,
   bio text,
   avatar_emoji text default '🎰',
+  avatar_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 既存プロジェクト向け: 新カラムを追加(既にテーブルがある場合)
+alter table public.profiles add column if not exists avatar_url text;
 
 comment on table public.profiles is 'ユーザーの公開プロフィール';
 
@@ -34,11 +38,16 @@ create table if not exists public.records (
   investment integer not null check (investment >= 0),
   payout integer not null check (payout >= 0),
   memo text,
+  is_public boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- 既存プロジェクト向け: 新カラムを追加(既にテーブルがある場合)
+alter table public.records add column if not exists is_public boolean not null default true;
+
 comment on table public.records is '1回の実働(遊技)データ。差枚/差玉ではなく投資額・回収額(円)で管理';
+comment on column public.records.is_public is 'true: 全ユーザーに公開 / false: 本人のみ閲覧可能';
 
 create index if not exists records_user_id_idx on public.records (user_id);
 create index if not exists records_play_date_idx on public.records (play_date desc);
@@ -112,7 +121,8 @@ create trigger on_auth_user_created
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security
--- 方針: ログイン済みユーザーは全員のデータを閲覧可能(認証必須アプリ)。
+-- 方針: ログイン済みユーザーは、公開設定(is_public = true)のデータと
+--       本人のデータ(公開・非公開問わず)を閲覧可能(認証必須アプリ)。
 --       書き込み(insert/update/delete)は本人のデータのみ可能。
 -- ----------------------------------------------------------------------------
 alter table public.profiles enable row level security;
@@ -146,7 +156,7 @@ drop policy if exists "records_select_authenticated" on public.records;
 create policy "records_select_authenticated"
   on public.records for select
   to authenticated
-  using (true);
+  using (is_public = true or user_id = auth.uid());
 
 drop policy if exists "records_insert_own" on public.records;
 create policy "records_insert_own"
@@ -168,12 +178,19 @@ create policy "records_delete_own"
   using (auth.uid() = user_id);
 
 -- comments
+-- 非公開レコードのコメントは、そのレコードの投稿者以外には見せない
 drop policy if exists "comments_select_all" on public.comments;
 drop policy if exists "comments_select_authenticated" on public.comments;
 create policy "comments_select_authenticated"
   on public.comments for select
   to authenticated
-  using (true);
+  using (
+    exists (
+      select 1 from public.records r
+      where r.id = comments.record_id
+        and (r.is_public = true or r.user_id = auth.uid())
+    )
+  );
 
 drop policy if exists "comments_insert_own" on public.comments;
 create policy "comments_insert_own"
@@ -190,12 +207,57 @@ create policy "comments_delete_own"
 -- ----------------------------------------------------------------------------
 -- 便利ビュー: プロフィール情報付きレコード一覧
 -- ----------------------------------------------------------------------------
-create or replace view public.records_with_profile
+-- テーブルへの列追加で `r.*` の列順序が変わるため、
+-- create or replace ではなく毎回 drop してから作り直す。
+drop view if exists public.records_with_profile;
+create view public.records_with_profile
 with (security_invoker = true) as
 select
   r.*,
   (r.payout - r.investment) as diff,
   p.username,
-  p.avatar_emoji
+  p.avatar_emoji,
+  p.avatar_url
 from public.records r
 join public.profiles p on p.id = r.user_id;
+
+-- ----------------------------------------------------------------------------
+-- Storage: アバター画像用バケット
+-- 誰でも閲覧可能(公開バケット)。アップロード/更新/削除は
+-- 自分のユーザーID配下のパス(<uid>/xxx)のみ許可。
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "avatar_images_select_all" on storage.objects;
+create policy "avatar_images_select_all"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "avatar_images_insert_own" on storage.objects;
+create policy "avatar_images_insert_own"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "avatar_images_update_own" on storage.objects;
+create policy "avatar_images_update_own"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "avatar_images_delete_own" on storage.objects;
+create policy "avatar_images_delete_own"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

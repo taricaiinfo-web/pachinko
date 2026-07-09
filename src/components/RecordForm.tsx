@@ -105,6 +105,32 @@ export function RecordForm({
         />
       </Field>
 
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">公開設定</span>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+            <input
+              type="radio"
+              name="is_public"
+              value="public"
+              defaultChecked={defaultValues?.is_public ?? true}
+              className="h-4 w-4 border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            公開(みんなに見せる)
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+            <input
+              type="radio"
+              name="is_public"
+              value="private"
+              defaultChecked={defaultValues?.is_public === false}
+              className="h-4 w-4 border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            非公開(自分のみ)
+          </label>
+        </div>
+      </div>
+
       {state.error && (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">
           {state.error}

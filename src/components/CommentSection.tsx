@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createComment, deleteComment, type CommentFormState } from "@/app/comments/actions";
+import { Avatar } from "@/components/Avatar";
 import type { CommentWithProfile } from "@/lib/types";
 
 const initialState: CommentFormState = { error: null };
@@ -27,7 +28,7 @@ export function CommentSection({
       <ul className="flex flex-col gap-3">
         {comments.map((c) => (
           <li key={c.id} className="flex items-start gap-2">
-            <span className="text-lg leading-none">{c.profiles?.avatar_emoji ?? "🎰"}</span>
+            <Avatar url={c.profiles?.avatar_url} emoji={c.profiles?.avatar_emoji} size={28} />
             <div className="flex-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">

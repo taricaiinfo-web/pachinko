@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sumRecords, formatYen } from "@/lib/aggregate";
+import { Avatar } from "@/components/Avatar";
 import type { Record as PlayRecord } from "@/lib/types";
 
 export default async function UserProfilePage({
@@ -31,9 +32,7 @@ export default async function UserProfilePage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center gap-4">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-3xl">
-          {profile.avatar_emoji ?? "🎰"}
-        </span>
+        <Avatar url={profile.avatar_url} emoji={profile.avatar_emoji} size={64} className="text-3xl" />
         <div>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
             {profile.username}

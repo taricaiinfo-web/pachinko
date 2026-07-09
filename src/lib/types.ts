@@ -6,6 +6,7 @@ export type Profile = {
   username: string;
   bio: string | null;
   avatar_emoji: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -19,6 +20,7 @@ export type Record = {
   investment: number;
   payout: number;
   memo: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -27,6 +29,7 @@ export type RecordWithProfile = Record & {
   diff: number;
   username: string;
   avatar_emoji: string | null;
+  avatar_url: string | null;
 };
 
 export type Comment = {
@@ -38,7 +41,7 @@ export type Comment = {
 };
 
 export type CommentWithProfile = Comment & {
-  profiles: Pick<Profile, "username" | "avatar_emoji"> | null;
+  profiles: Pick<Profile, "username" | "avatar_emoji" | "avatar_url"> | null;
 };
 
 export type Database = {

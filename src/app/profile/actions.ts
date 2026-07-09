@@ -21,6 +21,7 @@ export async function updateProfile(
   const username = getString(formData, "username");
   const bio = getString(formData, "bio");
   const avatarEmoji = getString(formData, "avatar_emoji") || "🎰";
+  const avatarUrl = getString(formData, "avatar_url");
 
   if (username.length < 2 || username.length > 20) {
     return { error: "ユーザー名は2〜20文字で入力してください。", success: false };
@@ -33,6 +34,10 @@ export async function updateProfile(
   }
   if (bio.length > 200) {
     return { error: "自己紹介は200文字以内で入力してください。", success: false };
+  }
+  const avatarUrlPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/`;
+  if (avatarUrl && !avatarUrl.startsWith(avatarUrlPrefix)) {
+    return { error: "不正なアバター画像です。", success: false };
   }
 
   const supabase = await createClient();
@@ -50,6 +55,7 @@ export async function updateProfile(
       username,
       bio: bio || null,
       avatar_emoji: avatarEmoji,
+      avatar_url: avatarUrl || null,
     } satisfies Partial<import("@/lib/types").Profile>)
     .eq("id", user.id);
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatYen } from "@/lib/aggregate";
 import { CommentSection } from "@/components/CommentSection";
+import { Avatar } from "@/components/Avatar";
 import { deleteRecord } from "@/app/records/actions";
 import type { CommentWithProfile } from "@/lib/types";
 
@@ -28,7 +29,7 @@ export default async function RecordDetailPage({
 
   const { data: comments } = await supabase
     .from("comments")
-    .select("*, profiles(username, avatar_emoji)")
+    .select("*, profiles(username, avatar_emoji, avatar_url)")
     .eq("record_id", id)
     .order("created_at", { ascending: true });
 
@@ -41,8 +42,13 @@ export default async function RecordDetailPage({
           href={`/profile/${record.user_id}`}
           className="flex items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:underline"
         >
-          <span className="text-xl">{record.avatar_emoji ?? "🎰"}</span>
+          <Avatar url={record.avatar_url} emoji={record.avatar_emoji} size={28} />
           {record.username}
+          {!record.is_public && (
+            <span className="rounded-full bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+              非公開
+            </span>
+          )}
         </Link>
         {isOwner && (
           <div className="flex gap-2">

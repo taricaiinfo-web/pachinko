@@ -36,6 +36,7 @@ export async function createRecord(
   const investmentRaw = getString(formData, "investment");
   const payoutRaw = getString(formData, "payout");
   const memo = getString(formData, "memo");
+  const isPublic = getString(formData, "is_public") !== "private";
 
   if (!playDate || !location || !machine || !investmentRaw || !payoutRaw) {
     return { error: "必須項目をすべて入力してください。" };
@@ -63,6 +64,7 @@ export async function createRecord(
       investment,
       payout,
       memo: memo || null,
+      is_public: isPublic,
     })
     .select("id")
     .single();
@@ -94,6 +96,7 @@ export async function updateRecord(
   const investmentRaw = getString(formData, "investment");
   const payoutRaw = getString(formData, "payout");
   const memo = getString(formData, "memo");
+  const isPublic = getString(formData, "is_public") !== "private";
 
   if (!playDate || !location || !machine || !investmentRaw || !payoutRaw) {
     return { error: "必須項目をすべて入力してください。" };
@@ -114,6 +117,7 @@ export async function updateRecord(
       investment,
       payout,
       memo: memo || null,
+      is_public: isPublic,
     })
     .eq("id", recordId)
     .eq("user_id", user.id);

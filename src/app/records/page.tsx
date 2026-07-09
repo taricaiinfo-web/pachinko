@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatYen } from "@/lib/aggregate";
+import { Avatar } from "@/components/Avatar";
 
 export const metadata = { title: "データ一覧 | パチログ" };
 
@@ -62,8 +63,13 @@ export default async function RecordsPage({
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  <span>{r.avatar_emoji ?? "🎰"}</span>
+                  <Avatar url={r.avatar_url} emoji={r.avatar_emoji} size={20} />
                   <span>{r.username}</span>
+                  {!r.is_public && (
+                    <span className="rounded-full bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      非公開
+                    </span>
+                  )}
                 </span>
                 <span
                   className={
