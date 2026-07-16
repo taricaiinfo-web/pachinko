@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/notifications";
 
 export type CommentFormState = {
   error: string | null;
@@ -35,6 +36,21 @@ export async function createComment(
 
   if (error) {
     return { error: "コメントの投稿に失敗しました。" };
+  }
+
+  const { data: record } = await supabase
+    .from("records")
+    .select("user_id")
+    .eq("id", recordId)
+    .single();
+
+  if (record) {
+    await createNotification(supabase, {
+      recipientId: record.user_id,
+      actorId: user.id,
+      type: "comment",
+      recordId,
+    });
   }
 
   revalidatePath(`/records/${recordId}`);

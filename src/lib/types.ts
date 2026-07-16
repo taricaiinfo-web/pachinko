@@ -30,6 +30,10 @@ export type RecordWithProfile = Record & {
   username: string;
   avatar_emoji: string | null;
   avatar_url: string | null;
+  like_count: number;
+  comment_count: number;
+  liked_by_me: boolean;
+  bookmarked_by_me: boolean;
 };
 
 export type Comment = {
@@ -42,6 +46,26 @@ export type Comment = {
 
 export type CommentWithProfile = Comment & {
   profiles: Pick<Profile, "username" | "avatar_emoji" | "avatar_url"> | null;
+};
+
+export type Follow = {
+  follower_id: string;
+  followee_id: string;
+  created_at: string;
+};
+
+export type Notification = {
+  id: string;
+  recipient_id: string;
+  actor_id: string;
+  type: "like" | "comment" | "follow";
+  record_id: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type NotificationWithActor = Notification & {
+  actor: Pick<Profile, "username" | "avatar_emoji" | "avatar_url"> | null;
 };
 
 export type Database = {
@@ -74,6 +98,34 @@ export type Database = {
           content: string;
         };
         Update: Partial<Comment>;
+        Relationships: [];
+      };
+      follows: {
+        Row: Follow;
+        Insert: { follower_id: string; followee_id: string };
+        Update: Partial<Follow>;
+        Relationships: [];
+      };
+      record_likes: {
+        Row: { record_id: string; user_id: string; created_at: string };
+        Insert: { record_id: string; user_id: string };
+        Update: never;
+        Relationships: [];
+      };
+      record_bookmarks: {
+        Row: { record_id: string; user_id: string; created_at: string };
+        Insert: { record_id: string; user_id: string };
+        Update: never;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Partial<Notification> & {
+          recipient_id: string;
+          actor_id: string;
+          type: Notification["type"];
+        };
+        Update: Partial<Notification>;
         Relationships: [];
       };
     };

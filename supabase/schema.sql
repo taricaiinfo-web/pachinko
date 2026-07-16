@@ -68,6 +68,68 @@ comment on table public.comments is '実働データに対するコメント';
 create index if not exists comments_record_id_idx on public.comments (record_id);
 
 -- ----------------------------------------------------------------------------
+-- 4. follows: フォロー関係
+-- ----------------------------------------------------------------------------
+create table if not exists public.follows (
+  follower_id uuid not null references public.profiles (id) on delete cascade,
+  followee_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (follower_id, followee_id),
+  check (follower_id <> followee_id)
+);
+
+comment on table public.follows is 'ユーザー間のフォロー関係';
+
+create index if not exists follows_follower_id_idx on public.follows (follower_id);
+create index if not exists follows_followee_id_idx on public.follows (followee_id);
+
+-- ----------------------------------------------------------------------------
+-- 5. record_likes: 実働データへのいいね
+-- ----------------------------------------------------------------------------
+create table if not exists public.record_likes (
+  record_id uuid not null references public.records (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (record_id, user_id)
+);
+
+comment on table public.record_likes is '実働データへのいいね';
+
+create index if not exists record_likes_record_id_idx on public.record_likes (record_id);
+
+-- ----------------------------------------------------------------------------
+-- 6. record_bookmarks: 実働データのブックマーク(本人のみ閲覧可能)
+-- ----------------------------------------------------------------------------
+create table if not exists public.record_bookmarks (
+  record_id uuid not null references public.records (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (record_id, user_id)
+);
+
+comment on table public.record_bookmarks is '実働データのブックマーク(本人のみ閲覧可能)';
+
+create index if not exists record_bookmarks_user_id_idx on public.record_bookmarks (user_id);
+
+-- ----------------------------------------------------------------------------
+-- 7. notifications: いいね・コメント・フォローの通知
+-- ----------------------------------------------------------------------------
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references public.profiles (id) on delete cascade,
+  actor_id uuid not null references public.profiles (id) on delete cascade,
+  type text not null check (type in ('like', 'comment', 'follow')),
+  record_id uuid references public.records (id) on delete cascade,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.notifications is 'いいね・コメント・フォローの通知';
+
+create index if not exists notifications_recipient_unread_idx
+  on public.notifications (recipient_id, is_read, created_at desc);
+
+-- ----------------------------------------------------------------------------
 -- updated_at 自動更新トリガー
 -- ----------------------------------------------------------------------------
 create or replace function public.set_updated_at()
@@ -128,6 +190,10 @@ create trigger on_auth_user_created
 alter table public.profiles enable row level security;
 alter table public.records enable row level security;
 alter table public.comments enable row level security;
+alter table public.follows enable row level security;
+alter table public.record_likes enable row level security;
+alter table public.record_bookmarks enable row level security;
+alter table public.notifications enable row level security;
 
 -- profiles
 drop policy if exists "profiles_select_all" on public.profiles;
@@ -204,6 +270,105 @@ create policy "comments_delete_own"
   to authenticated
   using (auth.uid() = user_id);
 
+-- follows
+drop policy if exists "follows_select_authenticated" on public.follows;
+create policy "follows_select_authenticated"
+  on public.follows for select
+  to authenticated
+  using (true);
+
+drop policy if exists "follows_insert_own" on public.follows;
+create policy "follows_insert_own"
+  on public.follows for insert
+  to authenticated
+  with check (auth.uid() = follower_id);
+
+drop policy if exists "follows_delete_own" on public.follows;
+create policy "follows_delete_own"
+  on public.follows for delete
+  to authenticated
+  using (auth.uid() = follower_id);
+
+-- record_likes
+-- 非公開レコードのいいねは、そのレコードの投稿者以外には見せない(comments と同じ方針)
+drop policy if exists "record_likes_select_authenticated" on public.record_likes;
+create policy "record_likes_select_authenticated"
+  on public.record_likes for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.records r
+      where r.id = record_likes.record_id
+        and (r.is_public = true or r.user_id = auth.uid())
+    )
+  );
+
+drop policy if exists "record_likes_insert_own" on public.record_likes;
+create policy "record_likes_insert_own"
+  on public.record_likes for insert
+  to authenticated
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.records r
+      where r.id = record_likes.record_id
+        and (r.is_public = true or r.user_id = auth.uid())
+    )
+  );
+
+drop policy if exists "record_likes_delete_own" on public.record_likes;
+create policy "record_likes_delete_own"
+  on public.record_likes for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- record_bookmarks
+-- ブックマークは本人のみ閲覧可能(他人には非公開)
+drop policy if exists "record_bookmarks_select_own" on public.record_bookmarks;
+create policy "record_bookmarks_select_own"
+  on public.record_bookmarks for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "record_bookmarks_insert_own" on public.record_bookmarks;
+create policy "record_bookmarks_insert_own"
+  on public.record_bookmarks for insert
+  to authenticated
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.records r
+      where r.id = record_bookmarks.record_id
+        and (r.is_public = true or r.user_id = auth.uid())
+    )
+  );
+
+drop policy if exists "record_bookmarks_delete_own" on public.record_bookmarks;
+create policy "record_bookmarks_delete_own"
+  on public.record_bookmarks for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- notifications
+drop policy if exists "notifications_select_own" on public.notifications;
+create policy "notifications_select_own"
+  on public.notifications for select
+  to authenticated
+  using (auth.uid() = recipient_id);
+
+drop policy if exists "notifications_insert_own_action" on public.notifications;
+create policy "notifications_insert_own_action"
+  on public.notifications for insert
+  to authenticated
+  with check (auth.uid() = actor_id and recipient_id <> actor_id);
+
+drop policy if exists "notifications_update_own" on public.notifications;
+create policy "notifications_update_own"
+  on public.notifications for update
+  to authenticated
+  using (auth.uid() = recipient_id)
+  with check (auth.uid() = recipient_id);
+
 -- ----------------------------------------------------------------------------
 -- 便利ビュー: プロフィール情報付きレコード一覧
 -- ----------------------------------------------------------------------------
@@ -217,9 +382,25 @@ select
   (r.payout - r.investment) as diff,
   p.username,
   p.avatar_emoji,
-  p.avatar_url
+  p.avatar_url,
+  coalesce(l.like_count, 0) as like_count,
+  coalesce(cm.comment_count, 0) as comment_count,
+  exists (
+    select 1 from public.record_likes rl
+    where rl.record_id = r.id and rl.user_id = auth.uid()
+  ) as liked_by_me,
+  exists (
+    select 1 from public.record_bookmarks rb
+    where rb.record_id = r.id and rb.user_id = auth.uid()
+  ) as bookmarked_by_me
 from public.records r
-join public.profiles p on p.id = r.user_id;
+join public.profiles p on p.id = r.user_id
+left join (
+  select record_id, count(*) as like_count from public.record_likes group by record_id
+) l on l.record_id = r.id
+left join (
+  select record_id, count(*) as comment_count from public.comments group by record_id
+) cm on cm.record_id = r.id;
 
 -- ----------------------------------------------------------------------------
 -- Storage: アバター画像用バケット
