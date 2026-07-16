@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+import { createClient } from "@/lib/supabase/server";
 
-const geistSans = Geist({
+const notoSansJP = Noto_Sans_JP({
   variable: "--font-geist-sans",
+  weight: ["400", "500", "700", "900"],
   subsets: ["latin"],
 });
 
@@ -24,18 +26,33 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let unreadCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("recipient_id", user.id)
+      .eq("is_read", false);
+    unreadCount = count ?? 0;
+  }
+
   return (
     <html
       lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${notoSansJP.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
-        <Navbar />
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <Navbar unreadCount={unreadCount} />
         <main className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</main>
       </body>
     </html>

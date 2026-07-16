@@ -1,52 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #efeee9;
+  --foreground: #1b1b1b;
+  --surface: #ffffff;
+  --border: #f0f0f0;
+  --border-strong: #e6e4df;
+  --input: #f2f2f2;
+  --muted: #8a8a8a;
+  --muted-2: #9a9a9a;
+  --muted-3: #b0b0b0;
+  --brand: #e8382c;
+  --brand-hover: #d02e23;
+  --positive: #17b85a;
+  --negative: #e8382c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-muted-3: var(--muted-3);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #17171a;
+    --foreground: #efeee9;
+    --surface: #232326;
+    --border: #2d2d30;
+    --border-strong: #38383b;
+    --input: #2a2a2d;
+    --muted: #9a9a9a;
+    --muted-2: #8a8a8a;
+    --muted-3: #77767a;
+    --brand: #ef4a3d;
+    --brand-hover: #f4655a;
+    --positive: #2ecc71;
+    --negative: #ef4a3d;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Noto Sans JP", Arial, Helvetica, sans-serif;
 }
 
-/* ---- チャート用カラートークン (dataviz skill 準拠の検証済みパレット) ---- */
+/* ---- チャート用カラートークン(収支プラス=緑、マイナス=ブランド赤) ---- */
 :root {
   --chart-surface: #fcfcfb;
   --chart-grid: #e1e0d9;
   --chart-axis: #898781;
   --chart-text-secondary: #52514e;
-  --chart-pos: #e34948; /* diverging red: 収支プラス */
-  --chart-neg: #2a78d6; /* diverging blue: 収支マイナス */
-  --chart-series-1: #2a78d6; /* categorical slot1: 投資額 */
-  --chart-series-2: #1baf7a; /* categorical slot2: 回収額 */
+  --chart-pos: #17b85a;
+  --chart-neg: #e8382c;
+  --chart-series-1: #e8382c;
+  --chart-series-2: #17b85a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --chart-surface: #1a1a19;
+    --chart-surface: #232326;
     --chart-grid: #2c2c2a;
     --chart-axis: #898781;
     --chart-text-secondary: #c3c2b7;
-    --chart-pos: #e66767;
-    --chart-neg: #3987e5;
-    --chart-series-1: #3987e5;
-    --chart-series-2: #199e70;
+    --chart-pos: #2ecc71;
+    --chart-neg: #ef4a3d;
+    --chart-series-1: #ef4a3d;
+    --chart-series-2: #2ecc71;
   }
 }
 
@@ -61,4 +94,14 @@ body {
 }
 .bar-series-2 {
   fill: var(--chart-series-2);
+}
+
+.spark-pos {
+  stroke: var(--chart-pos);
+}
+.spark-neg {
+  stroke: var(--chart-neg);
+}
+.spark-flat {
+  stroke: var(--chart-axis);
 }

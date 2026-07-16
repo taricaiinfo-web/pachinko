@@ -27,51 +27,43 @@ export function StatsChart({ records }: { records: PlayRecord[] }) {
 
   const points = useMemo(() => aggregateRecords(records, period), [records, period]);
   const totals = useMemo(() => sumRecords(records), [records]);
+  const wins = records.filter((r) => r.payout - r.investment > 0).length;
+  const winRate = records.length > 0 ? Math.round((wins / records.length) * 100) : 0;
+  const avgDiff = records.length > 0 ? Math.round(totals.diff / records.length) : 0;
 
   const yTickFormatter = (v: number) => `${Math.round(v / 1000)}k`;
 
   return (
     <div className="flex flex-col gap-6">
       {/* 期間タブ */}
-      <div className="flex gap-2">
+      <div className="flex rounded-[9px] bg-input p-[3px]">
         {(["week", "month", "year"] as Period[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
             aria-pressed={period === p}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              period === p
-                ? "bg-indigo-600 text-white"
-                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+            className={`flex-1 rounded-[7px] py-1.5 text-[11px] font-bold transition-colors ${
+              period === p ? "bg-surface text-brand shadow-sm" : "text-muted"
             }`}
           >
-            {PERIOD_LABEL[p]}別
+            {PERIOD_LABEL[p]}
           </button>
         ))}
       </div>
 
-      {/* サマリー stat tile */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatTile label="総投資額" value={`${totals.investment.toLocaleString()}円`} />
-        <StatTile label="総回収額" value={`${totals.payout.toLocaleString()}円`} />
-        <StatTile
-          label="収支"
-          value={formatYen(totals.diff)}
-          tone={totals.diff > 0 ? "pos" : totals.diff < 0 ? "neg" : "flat"}
-        />
+      {/* 収支サマリー */}
+      <div className="text-center">
+        <p className="text-[11px] text-muted">収支</p>
+        <p className={`text-2xl font-black ${totals.diff >= 0 ? "text-positive" : "text-negative"}`}>
+          {formatYen(totals.diff)}
+        </p>
       </div>
 
       {/* 収支の推移(diverging bar chart) */}
-      <section
-        className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4"
-        aria-label={`${PERIOD_LABEL[period]}別収支グラフ`}
-      >
+      <section aria-label={`${PERIOD_LABEL[period]}別収支グラフ`}>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            {PERIOD_LABEL[period]}別 収支
-          </h2>
-          {/* legend: 色は勝ち負けの符号を表す */}
-          <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-[13px] font-bold text-foreground">{PERIOD_LABEL[period]}別 収支</h2>
+          <div className="flex items-center gap-3 text-xs text-muted">
             <LegendSwatch className="bar-pos" label="プラス" />
             <LegendSwatch className="bar-neg" label="マイナス" />
           </div>
@@ -121,12 +113,12 @@ export function StatsChart({ records }: { records: PlayRecord[] }) {
       </section>
 
       {/* 投資額 vs 回収額 */}
-      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+      <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+          <h2 className="text-[13px] font-bold text-foreground">
             {PERIOD_LABEL[period]}別 投資額・回収額
           </h2>
-          <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center gap-3 text-xs text-muted">
             <LegendSwatch className="bar-series-1" label="投資額" />
             <LegendSwatch className="bar-series-2" label="回収額" />
           </div>
@@ -162,11 +154,26 @@ export function StatsChart({ records }: { records: PlayRecord[] }) {
         )}
       </section>
 
+      {/* 詳細データ */}
+      <section className="flex flex-col">
+        <h2 className="mb-1 text-[13px] font-bold text-foreground">詳細データ</h2>
+        <DetailRow label="投資額" value={`${totals.investment.toLocaleString()}円`} />
+        <DetailRow label="回収額" value={`${totals.payout.toLocaleString()}円`} />
+        <DetailRow label="勝率" value={`${winRate}%`} />
+        <DetailRow label="回数" value={`${records.length}回`} />
+        <DetailRow
+          label="平均収支"
+          value={formatYen(avgDiff)}
+          tone={avgDiff > 0 ? "pos" : avgDiff < 0 ? "neg" : "flat"}
+          last
+        />
+      </section>
+
       {/* アクセシビリティ: テーブル表示 */}
       <div>
         <button
           onClick={() => setShowTable((v) => !v)}
-          className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="text-sm font-medium text-brand hover:underline"
         >
           {showTable ? "テーブル表示を隠す" : "テーブルで表示する"}
         </button>
@@ -174,7 +181,7 @@ export function StatsChart({ records }: { records: PlayRecord[] }) {
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[420px] text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-left text-zinc-500 dark:text-zinc-400">
+                <tr className="border-b border-border text-left text-muted">
                   <th className="py-2 pr-2 font-medium">期間</th>
                   <th className="py-2 pr-2 font-medium text-right">投資額</th>
                   <th className="py-2 pr-2 font-medium text-right">回収額</th>
@@ -184,28 +191,22 @@ export function StatsChart({ records }: { records: PlayRecord[] }) {
               </thead>
               <tbody>
                 {points.map((p) => (
-                  <tr key={p.key} className="border-b border-zinc-100 dark:border-zinc-900">
-                    <td className="py-2 pr-2 text-zinc-700 dark:text-zinc-300">{p.label}</td>
-                    <td className="py-2 pr-2 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                  <tr key={p.key} className="border-b border-border">
+                    <td className="py-2 pr-2 text-foreground">{p.label}</td>
+                    <td className="py-2 pr-2 text-right tabular-nums text-foreground">
                       {p.investment.toLocaleString()}円
                     </td>
-                    <td className="py-2 pr-2 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                    <td className="py-2 pr-2 text-right tabular-nums text-foreground">
                       {p.payout.toLocaleString()}円
                     </td>
                     <td
                       className={`py-2 pr-2 text-right tabular-nums font-semibold ${
-                        p.diff > 0
-                          ? "text-rose-600 dark:text-rose-400"
-                          : p.diff < 0
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-zinc-500"
+                        p.diff > 0 ? "text-positive" : p.diff < 0 ? "text-negative" : "text-muted-2"
                       }`}
                     >
                       {formatYen(p.diff)}
                     </td>
-                    <td className="py-2 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                      {p.count}
-                    </td>
+                    <td className="py-2 text-right tabular-nums text-foreground">{p.count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -228,35 +229,33 @@ function LegendSwatch({ className, label }: { className: string; label: string }
 
 function EmptyState() {
   return (
-    <p className="flex h-[200px] items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+    <p className="flex h-[200px] items-center justify-center text-sm text-muted">
       表示できるデータがありません。
     </p>
   );
 }
 
-function StatTile({
+function DetailRow({
   label,
   value,
   tone,
+  last,
 }: {
   label: string;
   value: string;
   tone?: "pos" | "neg" | "flat";
+  last?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p
-        className={`mt-1 text-base font-bold ${
-          tone === "pos"
-            ? "text-rose-600 dark:text-rose-400"
-            : tone === "neg"
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-zinc-900 dark:text-zinc-50"
+    <div className={`flex items-center justify-between py-1.5 text-[11px] ${last ? "" : "border-b border-border"}`}>
+      <span className="text-muted">{label}</span>
+      <span
+        className={`font-bold ${
+          tone === "pos" ? "text-positive" : tone === "neg" ? "text-negative" : "text-foreground"
         }`}
       >
         {value}
-      </p>
+      </span>
     </div>
   );
 }
@@ -271,20 +270,16 @@ function DiffTooltip({
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs shadow-md">
-      <p className="font-medium text-zinc-500 dark:text-zinc-400">{p.label}</p>
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-muted">{p.label}</p>
       <p
         className={`mt-0.5 text-sm font-bold ${
-          p.diff > 0
-            ? "text-rose-600 dark:text-rose-400"
-            : p.diff < 0
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-zinc-500"
+          p.diff > 0 ? "text-positive" : p.diff < 0 ? "text-negative" : "text-muted-2"
         }`}
       >
         {formatYen(p.diff)}
       </p>
-      <p className="text-zinc-400">{p.count}回</p>
+      <p className="text-muted-3">{p.count}回</p>
     </div>
   );
 }
@@ -299,12 +294,12 @@ function AmountTooltip({
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs shadow-md">
-      <p className="font-medium text-zinc-500 dark:text-zinc-400">{p.label}</p>
-      <p className="mt-0.5 text-zinc-700 dark:text-zinc-200">
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-muted">{p.label}</p>
+      <p className="mt-0.5 text-foreground">
         投資額: <span className="font-semibold">{p.investment.toLocaleString()}円</span>
       </p>
-      <p className="text-zinc-700 dark:text-zinc-200">
+      <p className="text-foreground">
         回収額: <span className="font-semibold">{p.payout.toLocaleString()}円</span>
       </p>
     </div>

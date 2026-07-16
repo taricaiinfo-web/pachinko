@@ -22,7 +22,7 @@ export function Avatar({
   }
   return (
     <span
-      className={`inline-flex flex-none items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 ${className}`}
+      className={`inline-flex flex-none items-center justify-center rounded-full bg-input ${className}`}
       style={{ width: size, height: size, fontSize: size * 0.55 }}
     >
       {emoji ?? "🎰"}

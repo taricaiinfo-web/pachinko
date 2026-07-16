@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { formatYen } from "@/lib/aggregate";
-import { Avatar } from "@/components/Avatar";
+import { RecordCard } from "@/components/RecordCard";
+import type { RecordWithProfile } from "@/lib/types";
 
-export const metadata = { title: "データ一覧 | パチログ" };
+export const metadata = { title: "ホーム | パチログ" };
 
 export default async function RecordsPage({
   searchParams,
@@ -11,110 +10,85 @@ export default async function RecordsPage({
   searchParams: Promise<{ scope?: string }>;
 }) {
   const { scope: scopeParam } = await searchParams;
-  const scope = scopeParam === "mine" ? "mine" : "all";
+  const scope = scopeParam === "following" ? "following" : "all";
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let query = supabase
-    .from("records_with_profile")
-    .select("*")
-    .order("play_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(100);
+  let records: RecordWithProfile[] = [];
+  let error = false;
+  let hasNoFollows = false;
 
-  if (scope === "mine" && user) {
-    query = query.eq("user_id", user.id);
+  if (scope === "following" && user) {
+    const { data: follows } = await supabase
+      .from("follows")
+      .select("followee_id")
+      .eq("follower_id", user.id);
+
+    const followeeIds = (follows ?? []).map((f) => f.followee_id);
+
+    if (followeeIds.length === 0) {
+      hasNoFollows = true;
+    } else {
+      const { data, error: queryError } = await supabase
+        .from("records_with_profile")
+        .select("*")
+        .in("user_id", followeeIds)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      records = (data ?? []) as RecordWithProfile[];
+      error = !!queryError;
+    }
+  } else {
+    const { data, error: queryError } = await supabase
+      .from("records_with_profile")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    records = (data ?? []) as RecordWithProfile[];
+    error = !!queryError;
   }
 
-  const { data: records, error } = await query;
-
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">データ一覧</h1>
-        <Link
-          href="/records/new"
-          className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-        >
-          + 新規登録
-        </Link>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-2">
+      <h1 className="px-1 py-2 text-[17px] font-bold text-foreground">ホーム</h1>
+
+      <div className="flex border-b border-border">
+        <ScopeTab href="/records?scope=all" active={scope === "all"} label="おすすめ" />
+        <ScopeTab href="/records?scope=following" active={scope === "following"} label="フォロー中" />
       </div>
 
-      <div className="flex gap-2">
-        <ScopeTab href="/records?scope=all" active={scope === "all"} label="みんなの記録" />
-        <ScopeTab href="/records?scope=mine" active={scope === "mine"} label="自分の記録" />
-      </div>
+      {error && <p className="py-4 text-sm text-negative">データの取得に失敗しました。</p>}
 
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">
-          データの取得に失敗しました。
+      {hasNoFollows ? (
+        <p className="py-16 text-center text-sm text-muted">
+          まだ誰もフォローしていません。気になるユーザーをフォローすると、ここに記録が表示されます。
         </p>
+      ) : (
+        <div className="flex flex-col">
+          {records.map((r) => (
+            <RecordCard key={r.id} record={r} />
+          ))}
+          {records.length === 0 && !error && (
+            <p className="py-16 text-center text-sm text-muted">まだ記録がありません。</p>
+          )}
+        </div>
       )}
-
-      <ul className="flex flex-col gap-2">
-        {(records ?? []).map((r) => (
-          <li key={r.id}>
-            <Link
-              href={`/records/${r.id}`}
-              className="flex flex-col gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  <Avatar url={r.avatar_url} emoji={r.avatar_emoji} size={20} />
-                  <span>{r.username}</span>
-                  {!r.is_public && (
-                    <span className="rounded-full bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                      非公開
-                    </span>
-                  )}
-                </span>
-                <span
-                  className={
-                    r.diff > 0
-                      ? "text-base font-bold text-rose-600 dark:text-rose-400"
-                      : r.diff < 0
-                        ? "text-base font-bold text-blue-600 dark:text-blue-400"
-                        : "text-base font-bold text-zinc-500"
-                  }
-                >
-                  {formatYen(r.diff)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-                <span>
-                  {r.play_date} ・ {r.location}
-                </span>
-                <span className="truncate max-w-[45%]">{r.machine}</span>
-              </div>
-            </Link>
-          </li>
-        ))}
-        {(records ?? []).length === 0 && !error && (
-          <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            {scope === "mine"
-              ? "まだ記録がありません。「+ 新規登録」から記録してみましょう。"
-              : "まだ記録がありません。"}
-          </p>
-        )}
-      </ul>
     </div>
   );
 }
 
 function ScopeTab({ href, active, label }: { href: string; active: boolean; label: string }) {
   return (
-    <Link
+    <a
       href={href}
-      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-        active
-          ? "bg-indigo-600 text-white"
-          : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+      className={`flex-1 border-b-2 py-2 text-center text-xs font-bold transition-colors ${
+        active ? "border-brand text-brand" : "border-transparent text-muted-2"
       }`}
     >
       {label}
-    </Link>
+    </a>
   );
 }

@@ -22,7 +22,7 @@ export function RecordForm({
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 w-full max-w-md">
+    <form action={formAction} className="flex flex-col gap-3.5 w-full max-w-md">
       <Field label="日付" htmlFor="play_date">
         <input
           id="play_date"
@@ -35,7 +35,7 @@ export function RecordForm({
         />
       </Field>
 
-      <Field label="場所(店舗名)" htmlFor="location">
+      <Field label="店舗" htmlFor="location">
         <input
           id="location"
           name="location"
@@ -55,14 +55,14 @@ export function RecordForm({
           type="text"
           required
           maxLength={50}
-          placeholder="例: Pフィーバー myジャグラー"
+          placeholder="例: P北斗の拳 無双"
           defaultValue={defaultValues?.machine ?? ""}
           className={inputClass}
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="投資額(円)" htmlFor="investment">
+      <Field label="投資額" htmlFor="investment">
+        <div className={`${inputClass} flex items-center justify-end gap-1`}>
           <input
             id="investment"
             name="investment"
@@ -73,11 +73,14 @@ export function RecordForm({
             step={1}
             placeholder="0"
             defaultValue={defaultValues?.investment ?? undefined}
-            className={inputClass}
+            className="w-full bg-transparent text-right font-bold outline-none"
           />
-        </Field>
+          <span className="text-muted">円</span>
+        </div>
+      </Field>
 
-        <Field label="回収額(円)" htmlFor="payout">
+      <Field label="回収額" htmlFor="payout">
+        <div className={`${inputClass} flex items-center justify-end gap-1`}>
           <input
             id="payout"
             name="payout"
@@ -88,10 +91,11 @@ export function RecordForm({
             step={1}
             placeholder="0"
             defaultValue={defaultValues?.payout ?? undefined}
-            className={inputClass}
+            className="w-full bg-transparent text-right font-bold outline-none"
           />
-        </Field>
-      </div>
+          <span className="text-muted">円</span>
+        </div>
+      </Field>
 
       <Field label="メモ(任意)" htmlFor="memo">
         <textarea
@@ -105,26 +109,26 @@ export function RecordForm({
         />
       </Field>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">公開設定</span>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-bold text-foreground">公開設定</span>
         <div className="flex gap-4">
-          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+          <label className="flex items-center gap-1.5 text-sm text-muted">
             <input
               type="radio"
               name="is_public"
               value="public"
               defaultChecked={defaultValues?.is_public ?? true}
-              className="h-4 w-4 border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
             />
             公開(みんなに見せる)
           </label>
-          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+          <label className="flex items-center gap-1.5 text-sm text-muted">
             <input
               type="radio"
               name="is_public"
               value="private"
               defaultChecked={defaultValues?.is_public === false}
-              className="h-4 w-4 border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
             />
             非公開(自分のみ)
           </label>
@@ -132,7 +136,7 @@ export function RecordForm({
       </div>
 
       {state.error && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm text-negative" role="alert">
           {state.error}
         </p>
       )}
@@ -140,7 +144,7 @@ export function RecordForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-60"
+        className="mt-1 rounded-lg bg-brand px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-hover disabled:opacity-60"
       >
         {pending ? "保存中…" : submitLabel}
       </button>
@@ -149,7 +153,7 @@ export function RecordForm({
 }
 
 const inputClass =
-  "rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500";
+  "rounded-[9px] border border-border-strong bg-surface px-3 py-2.5 text-[13px] text-foreground outline-none focus-within:ring-2 focus-within:ring-brand focus:ring-2 focus:ring-brand";
 
 function Field({
   label,
@@ -161,8 +165,8 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={htmlFor} className="text-[11px] font-bold text-foreground">
         {label}
       </label>
       {children}

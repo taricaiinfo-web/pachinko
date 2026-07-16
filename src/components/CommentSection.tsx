@@ -21,21 +21,21 @@ export function CommentSection({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+      <h2 className="text-[13px] font-bold text-foreground">
         コメント ({comments.length})
       </h2>
 
       <ul className="flex flex-col gap-3">
         {comments.map((c) => (
           <li key={c.id} className="flex items-start gap-2">
-            <Avatar url={c.profiles?.avatar_url} emoji={c.profiles?.avatar_emoji} size={28} />
-            <div className="flex-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 px-3 py-2">
+            <Avatar url={c.profiles?.avatar_url} emoji={c.profiles?.avatar_emoji} size={26} />
+            <div className="flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                <span className="text-[11px] font-bold text-foreground">
                   {c.profiles?.username ?? "unknown"}
                 </span>
                 <div className="flex items-center gap-2">
-                  <time className="text-[11px] text-zinc-400">
+                  <time className="text-[9px] text-muted-3">
                     {new Date(c.created_at).toLocaleString("ja-JP", {
                       month: "numeric",
                       day: "numeric",
@@ -45,51 +45,46 @@ export function CommentSection({
                   </time>
                   {currentUserId === c.user_id && (
                     <form action={deleteComment.bind(null, recordId, c.id)}>
-                      <button
-                        type="submit"
-                        className="text-[11px] text-zinc-400 hover:text-red-500"
-                      >
+                      <button type="submit" className="text-[11px] text-muted-3 hover:text-negative">
                         削除
                       </button>
                     </form>
                   )}
                 </div>
               </div>
-              <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-zinc-800 dark:text-zinc-100">
+              <p className="mt-0.5 whitespace-pre-wrap break-words text-[10px] leading-relaxed text-foreground/90">
                 {c.content}
               </p>
             </div>
           </li>
         ))}
         {comments.length === 0 && (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            まだコメントはありません。
-          </p>
+          <p className="text-sm text-muted">まだコメントはありません。</p>
         )}
       </ul>
 
       {currentUserId && (
-        <form action={formAction} className="flex flex-col gap-2">
+        <form action={formAction} className="flex items-center gap-2">
           <textarea
             name="content"
-            rows={2}
+            rows={1}
             maxLength={500}
-            placeholder="コメントを入力…"
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="コメントを入力..."
+            className="flex-1 resize-none rounded-full bg-input px-4 py-2 text-[11px] text-foreground outline-none placeholder:text-muted-3"
           />
-          {state.error && (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-              {state.error}
-            </p>
-          )}
           <button
             type="submit"
             disabled={pending}
-            className="self-end rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            className="flex-none rounded-full bg-brand px-4 py-2 text-[11px] font-bold text-white hover:bg-brand-hover disabled:opacity-60"
           >
-            {pending ? "投稿中…" : "コメントする"}
+            {pending ? "投稿中…" : "投稿"}
           </button>
         </form>
+      )}
+      {state.error && (
+        <p className="text-sm text-negative" role="alert">
+          {state.error}
+        </p>
       )}
     </div>
   );
